@@ -1,0 +1,45 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI Test
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  run-mvn-test:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        distribution: [ 'adopt', 'zulu' ]
+        version: [ '11' ]
+
+    name: ${{ matrix.distribution }} ${{ matrix.version }} (jdk-x64) - ${{ matrix.os }} - Test
+
+    runs-on: ${{ matrix.os }}
+
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mail
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout Sourse Code
+        uses: actions/checkout@v2.4.0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: ${{ matrix.version }}
+          distribution: ${{ matrix.distribution }}
+
+      - name: Mvn Test
+        run: mvn test -Dspring.profiles.active=test
